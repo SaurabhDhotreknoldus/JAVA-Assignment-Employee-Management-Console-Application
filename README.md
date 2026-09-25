@@ -27,7 +27,6 @@ A clean, production-grade **Java Console Application** developed for the **NashT
   - [Build and Run via Maven](#build-and-run-via-maven)
   - [Running Automated Unit Tests](#running-automated-unit-tests)
 - [Sample Output & Verification](#sample-output--verification)
-- [Evaluation Checklist](#evaluation-checklist)
 
 ---
 
@@ -294,17 +293,3 @@ Enter Employee ID to search: 999
 *(For full execution transcripts, refer to [SAMPLE_OUTPUT.md](SAMPLE_OUTPUT.md)).*
 
 ---
-
-## Evaluation Checklist
-
-| Evaluation Parameter | Weightage | Met | Notes |
-|---|:---:|:---:|---|
-| **Java Fundamentals & Code Correctness** | 20% | 100% | Variables, types, methods, defensive validation, control flow |
-| **OOP Concepts & Code Structure** | 20% | 100% | Layered architecture, encapsulation, interfaces, DIP, SRP |
-| **Appropriate Usage of Collections** | 15% | 100% | `LinkedHashMap` for $O(1)$ lookups and order preservation, `List` |
-| **Exception Handling** | 15% | 100% | Custom `EmployeeNotFoundException`, `DuplicateEmployeeException` |
-| **Lambda Expressions / Stream API** | 15% | 100% | Multi-predicate filtering with method references and lambdas |
-| **Code Readability, Naming & Maintainability** | 10% | 100% | Clean code, comprehensive JavaDoc, idiomatic naming |
-| **Successful Execution / Expected Output** | 5% | 100% | Automated demo and interactive runner matching sample data |
-| **Bonus Modern Java Features** | Optional | 100% | Java `record`, `Optional<T>`, enhanced switch expressions |
-| **Total** | **100%** | **100%** | Ready for submission |
