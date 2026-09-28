@@ -9,24 +9,34 @@ A clean, production-grade **Java Console Application** developed for the **NashT
 ---
 
 ## Table of Contents
-- [Assignment Overview](#assignment-overview)
-- [Requirements & Feature Matrix](#requirements--feature-matrix)
-- [Architecture & Design Principles](#architecture--design-principles)
-- [Concepts Demonstrated](#concepts-demonstrated)
-  - [1. Java Fundamentals](#1-java-fundamentals)
-  - [2. Object-Oriented Programming (OOP)](#2-object-oriented-programming-oop)
-  - [3. Collections Framework](#3-collections-framework)
-  - [4. Custom Exception Handling](#4-custom-exception-handling)
-  - [5. Stream API & Lambda Expressions](#5-stream-api--lambda-expressions)
-  - [6. Modern Java Features (Bonus)](#6-modern-java-features-bonus)
-- [Project Structure](#project-structure)
-- [Getting Started & Execution](#getting-started--execution)
-  - [Prerequisites](#prerequisites)
-  - [Quick Start with Batch Scripts (Windows)](#quick-start-with-batch-scripts-windows)
-  - [Build and Run via CLI (javac & java)](#build-and-run-via-cli-javac--java)
-  - [Build and Run via Maven](#build-and-run-via-maven)
-  - [Running Automated Unit Tests](#running-automated-unit-tests)
-- [Sample Output & Verification](#sample-output--verification)
+- [Part 1: Java Essentials — Console Application](#part-1-java-essentials--console-application)
+  - [Assignment Overview](#assignment-overview)
+  - [Requirements & Feature Matrix](#requirements--feature-matrix)
+  - [Architecture & Design Principles](#architecture--design-principles)
+  - [Concepts Demonstrated](#concepts-demonstrated)
+    - [1. Java Fundamentals](#1-java-fundamentals)
+    - [2. Object-Oriented Programming (OOP)](#2-object-oriented-programming-oop)
+    - [3. Collections Framework](#3-collections-framework)
+    - [4. Custom Exception Handling](#4-custom-exception-handling)
+    - [5. Stream API & Lambda Expressions](#5-stream-api--lambda-expressions)
+    - [6. Modern Java Features (Bonus)](#6-modern-java-features-bonus)
+  - [Project Structure](#project-structure)
+  - [Getting Started & Execution (Console App)](#getting-started--execution)
+    - [Quick Start with Batch Scripts (Windows)](#quick-start-with-batch-scripts-windows)
+    - [Build and Run via CLI (javac & java)](#build-and-run-via-cli-javac--java)
+    - [Running Automated Unit Tests](#running-automated-unit-tests)
+  - [Sample Output & Verification](#sample-output--verification)
+- [Part 2: Practical Assignment — Spring Boot + Redis + Nexus Artifact Repository](#part-2-practical-assignment--spring-boot--redis--nexus-artifact-repository)
+  - [Objective & Learning Outcomes](#objective--learning-outcomes)
+  - [Architecture & Workflow](#architecture--workflow)
+  - [Implementation Tasks (12 Tasks)](#implementation-tasks-12-tasks)
+  - [Evaluation Criteria (100 Marks)](#evaluation-criteria-100-marks)
+  - [Prerequisites & Infrastructure (Docker Compose)](#prerequisites--infrastructure-docker-compose)
+  - [Application 1: Employee Library (Publishing to Nexus)](#application-1-employee-library-publishing-to-nexus)
+  - [Application 2: Employee Redis Application (Consuming from Nexus)](#application-2-employee-redis-application-consuming-from-nexus)
+  - [Redis Caching Strategy (@Cacheable, @CachePut, @CacheEvict, TTL)](#redis-caching-strategy-cacheable-cacheput-cacheevict-ttl)
+  - [Execution & Verification Guide](#execution--verification-guide)
+
 
 ---
 
@@ -293,3 +303,287 @@ Enter Employee ID to search: 999
 *(For full execution transcripts, refer to [SAMPLE_OUTPUT.md](SAMPLE_OUTPUT.md)).*
 
 ---
+
+# Part 2: Practical Assignment — Spring Boot + Redis + Nexus Artifact Repository
+
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.3-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![Redis](https://img.shields.io/badge/Redis-7%20Cache-red.svg)](https://redis.io/)
+[![Nexus OSS](https://img.shields.io/badge/Nexus-3%20Repository-blue.svg)](https://www.sonatype.com/products/sonatype-nexus-oss)
+[![Docker](https://img.shields.io/badge/Docker%20Compose-Enabled-2496ED.svg)](https://www.docker.com/)
+
+---
+
+## Objective & Learning Outcomes
+
+### Objective
+Implement an end-to-end enterprise solution using **Spring Boot**, **REST APIs**, **Redis caching**, **Maven**, **Nexus Repository**, **artifact publishing and consumption**, and **dependency management**.
+
+### Learning Outcomes
+- Build reusable Maven artifacts (`employee-library-1.0.0.jar`).
+- Publish artifacts to Sonatype Nexus Hosted Repository using `mvn deploy`.
+- Consume artifacts from Nexus in another Spring Boot application.
+- Implement Redis caching using Spring Cache (`@EnableCaching`).
+- Demonstrate cache update and eviction strategies (`@Cacheable`, `@CachePut`, `@CacheEvict`).
+- Demonstrate TTL (Time-To-Live) and cache expiration.
+- Manage multi-project dependencies using Maven.
+
+---
+
+## Architecture & Workflow
+
+```mermaid
+graph LR
+    subgraph Infrastructure["Infrastructure (Docker Compose)"]
+        Nexus[("Sonatype Nexus 3 (:8081)<br/>maven-releases repository")]
+        Redis[("Redis 7 (:6379)<br/>Distributed In-Memory Cache")]
+    end
+
+    subgraph App1["Application 1: Employee Library"]
+        LibCode["employee-library<br/>(Models, DTOs, Exceptions)"]
+        LibDeploy["mvn clean deploy<br/>(Distribution Management)"]
+        LibCode --> LibDeploy
+        LibDeploy -->|Publish employee-library-1.0.0.jar| Nexus
+    end
+
+    subgraph App2["Application 2: Employee Redis Application (Spring Boot :8080)"]
+        ConsumerPOM["pom.xml (Nexus Repositories)"] -->|Download Artifact| Nexus
+        REST["REST API Controllers<br/>/api/employees"]
+        CacheService["EmployeeCacheService<br/>(@Cacheable, @CachePut, @CacheEvict)"]
+        JPA["Spring Data JPA Repository"]
+        H2[("Database (H2 / PostgreSQL)")]
+
+        REST --> CacheService
+        CacheService -->|Read / Write / Evict| Redis
+        CacheService -->|DB Fallback / Persist| JPA
+        JPA --> H2
+    end
+```
+
+### Architecture Highlights:
+1. **Application 1: Employee Library (`employee-library`)**:
+   - Contains reusable domain models (`Employee`, `EmployeeRecord`), DTOs (`EmployeeRequestDto`, `EmployeeResponseDto`), and exceptions (`EmployeeNotFoundException`, `DuplicateEmployeeException`, `InvalidEmployeeDataException`).
+   - Packaged as a Maven artifact and published to Nexus via `mvn clean deploy`.
+2. **Application 2: Employee Redis Application (`employee-redis-app`)**:
+   - Consumes `com.nashtech:employee-library:1.0.0` from the Nexus repository.
+   - Exposes RESTful CRUD APIs with database persistence (Spring Data JPA + H2 in-memory database).
+   - Implements Redis Caching with Spring Cache.
+3. **Existing Console App**:
+   - Remains **100% intact and functional** under `src/main/java/com/nashtech/employeemanagement/`.
+
+---
+
+## Implementation Tasks (12 Tasks)
+
+| # | Task | Component / File | Status |
+|---|---|---|:---:|
+| **1** | Create Employee Library project and reusable employee components | `employee-library/` | Completed |
+| **2** | Configure Nexus Hosted Maven Repository | `docker/docker-compose.yml`, `docker/nexus-setup/` | Completed |
+| **3** | Publish employee-library artifact to Nexus using `mvn deploy` | `employee-library/pom.xml`, `deploy-library.bat` | Completed |
+| **4** | Create Employee Redis Application | `employee-redis-app/` | Completed |
+| **5** | Configure Maven to consume artifact from Nexus | `employee-redis-app/pom.xml`, `maven-settings/settings.xml` | Completed |
+| **6** | Implement Employee CRUD REST APIs | `EmployeeRestController.java` | Completed |
+| **7** | Configure database persistence | `EmployeeJpaRepository.java`, `application.yml` | Completed |
+| **8** | Configure Redis cache integration | `RedisConfig.java` (`RedisCacheManager`, JSON Serializer) | Completed |
+| **9** | Implement `@Cacheable` for read operations | `EmployeeCacheServiceImpl.getEmployeeById()` | Completed |
+| **10** | Implement `@CachePut` for updates | `EmployeeCacheServiceImpl.updateEmployee()` | Completed |
+| **11** | Implement `@CacheEvict` for delete operations | `EmployeeCacheServiceImpl.deleteEmployee()` | Completed |
+| **12** | Demonstrate TTL and cache expiration | `app.cache.ttl-seconds: 300`, `test-cache-api.ps1` | Completed |
+
+---
+
+## Evaluation Criteria (100 Marks)
+
+| Evaluation Area | Weightage | Implementation Evidence |
+|---|:---:|---|
+| **Employee Library implementation** | 10% | `employee-library` source code, models, records, DTOs, and exception contracts |
+| **Nexus Hosted Repository configuration** | 15% | Docker Compose with Nexus 3, repository configuration in `pom.xml` & `settings.xml` |
+| **Artifact publishing to Nexus** | 10% | `mvn clean deploy` with `<distributionManagement>` publishing `1.0.0.jar` |
+| **Artifact consumption from Nexus** | 15% | `employee-redis-app` configured with Nexus `<repositories>` downloading library |
+| **Employee REST APIs** | 10% | Complete CRUD + Department filter + Stream-based salary threshold filter |
+| **Redis configuration** | 10% | `RedisCacheManager`, `GenericJackson2JsonRedisSerializer`, custom TTL |
+| **@Cacheable implementation** | 10% | `getEmployeeById()` with cache-aside pattern (Cache Miss -> DB, Cache Hit -> Redis) |
+| **@CachePut / @CacheEvict implementation** | 10% | In-place cache refresh on update and key eviction on delete |
+| **TTL / cache expiration demonstration** | 5% | Configurable TTL in `application.yml` and Redis TTL command verification |
+| **Documentation & README** | 5% | End-to-end setup guide, API collection, and automated verification scripts |
+| **Total** | **100%** | **All 12 requirements covered and verified** |
+
+---
+
+## Prerequisites & Infrastructure (Docker Compose)
+
+### Prerequisites:
+- **JDK 17 or later**
+- **Docker & Docker Compose** (for Nexus & Redis)
+- **Maven 3.8+** (or IDE with built-in Maven)
+
+### Starting Nexus and Redis:
+Use the provided batch script or run directly with Docker Compose:
+```bash
+# Using Batch script:
+.\docker-start.bat
+
+# Or using Docker CLI:
+docker compose -f docker/docker-compose.yml up -d
+```
+
+Containers started:
+- **Nexus 3**: `http://localhost:8081` (Credentials: `admin` / `admin123`)
+- **Redis 7**: `localhost:6379`
+
+To stop containers:
+```bash
+.\docker-stop.bat
+# Or: docker compose -f docker/docker-compose.yml down
+```
+
+---
+
+## Application 1: Employee Library (Publishing to Nexus)
+
+The `employee-library` is configured with Maven `<distributionManagement>` targeting the Nexus hosted repository:
+
+```xml
+<distributionManagement>
+    <repository>
+        <id>nexus-releases</id>
+        <name>Nexus Hosted Release Repository</name>
+        <url>http://localhost:8081/repository/maven-releases/</url>
+    </repository>
+    <snapshotRepository>
+        <id>nexus-snapshots</id>
+        <name>Nexus Hosted Snapshot Repository</name>
+        <url>http://localhost:8081/repository/maven-snapshots/</url>
+    </snapshotRepository>
+</distributionManagement>
+```
+
+### To build and deploy to Nexus:
+```bash
+# Using helper script:
+.\deploy-library.bat
+
+# Or using Maven:
+cd employee-library
+mvn clean deploy -s ../maven-settings/settings.xml
+```
+
+---
+
+## Application 2: Employee Redis Application (Consuming from Nexus)
+
+The `employee-redis-app` consumes `com.nashtech:employee-library:1.0.0` from Nexus:
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>com.nashtech</groupId>
+        <artifactId>employee-library</artifactId>
+        <version>1.0.0</version>
+    </dependency>
+    <!-- Spring Boot Web, Data JPA, Redis, Cache -->
+</dependencies>
+```
+
+### Running the Application:
+```bash
+# Using helper script:
+.\run-redis-app.bat
+
+# Or using Maven:
+cd employee-redis-app
+mvn spring-boot:run -s ../maven-settings/settings.xml
+```
+Spring Boot starts on: **http://localhost:8080**
+H2 Database Console is available at: **http://localhost:8080/h2-console** (JDBC URL: `jdbc:h2:mem:employeedb`)
+
+---
+
+## Redis Caching Strategy (@Cacheable, @CachePut, @CacheEvict, TTL)
+
+### 1. Read Operation with `@Cacheable`
+```java
+@Cacheable(value = "employees", key = "#id")
+public EmployeeResponseDto getEmployeeById(int id) {
+    // 1st Call (Cache Miss): Queries DB, saves result in Redis with TTL
+    // 2nd Call (Cache Hit): Returns immediately from Redis (DB is bypassed)
+    return employeeRepository.findById(id)
+            .map(EmployeeEntity::toResponseDto)
+            .orElseThrow(() -> new EmployeeNotFoundException(id));
+}
+```
+
+### 2. Update Operation with `@CachePut`
+```java
+@CachePut(value = "employees", key = "#id")
+public EmployeeResponseDto updateEmployee(int id, EmployeeRequestDto requestDto) {
+    // Updates database AND immediately updates Redis cache entry
+    EmployeeEntity updated = employeeRepository.save(existing);
+    return updated.toResponseDto();
+}
+```
+
+### 3. Delete Operation with `@CacheEvict`
+```java
+@CacheEvict(value = "employees", key = "#id")
+public void deleteEmployee(int id) {
+    // Deletes from database AND immediately removes key from Redis cache
+    employeeRepository.deleteById(id);
+}
+```
+
+### 4. TTL (Time-To-Live) and Expiration
+Configured in `application.yml`:
+```yaml
+app:
+  cache:
+    name: employees
+    ttl-seconds: 300 # 5 minutes TTL
+```
+Verify via Redis CLI:
+```bash
+docker exec -it employee-redis redis-cli
+127.0.0.1:6379> KEYS *
+1) "employees::102"
+127.0.0.1:6379> TTL employees::102
+(integer) 284
+```
+
+---
+
+## REST API Reference
+
+| Method | Endpoint | Description | Cache Behavior |
+|---|---|---|---|
+| `GET` | `/api/employees` | Get all employees | Fetches from Database |
+| `GET` | `/api/employees/{id}` | Get employee by ID | **`@Cacheable`** (Cache Miss -> DB, Cache Hit -> Redis) |
+| `POST` | `/api/employees` | Create employee | Saves to DB |
+| `PUT` | `/api/employees/{id}` | Update employee | **`@CachePut`** (Updates DB and refreshes Redis) |
+| `DELETE` | `/api/employees/{id}` | Delete employee | **`@CacheEvict`** (Deletes from DB and evicts Redis key) |
+| `GET` | `/api/employees/department/{dept}` | Filter by department | Stream filter from DB |
+| `GET` | `/api/employees/active/salary-threshold` | Active with salary > threshold | Stream filter from DB |
+| `GET` | `/api/employees/cache/keys` | Inspect active Redis keys | Debug / demo helper |
+
+---
+
+## Execution & Verification Guide
+
+### Option 1: Automated Verification Script (PowerShell)
+With the application running, execute:
+```powershell
+.\test-cache-api.ps1
+```
+This script automatically executes all 10 test scenarios:
+1. `GET /api/employees` (lists preloaded employees).
+2. `GET /api/employees/102` (Cache Miss -> DB query).
+3. `GET /api/employees/102` (Cache Hit -> served from Redis in <5ms).
+4. `POST /api/employees` (creates new employee 105).
+5. `PUT /api/employees/102` (`@CachePut` updates DB and Redis).
+6. Verification that updated data is served from cache.
+7. `DELETE /api/employees/105` (`@CacheEvict` removes key).
+8. Filter by department `Engineering`.
+9. Filter active with salary > 100,000 (Stream API).
+10. Inspect active Redis keys.
+
+### Option 2: Postman Collection
+Import the pre-configured collection into Postman:
+📂 `postman/Employee_Redis_API.postman_collection.json`

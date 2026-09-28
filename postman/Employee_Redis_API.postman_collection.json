@@ -1,0 +1,161 @@
+{
+  "info": {
+    "name": "Employee Redis Application API",
+    "_postman_id": "c7a8b9e0-1234-5678-9abc-def012345678",
+    "description": "Comprehensive REST API Collection demonstrating Spring Boot + Redis Caching (@Cacheable, @CachePut, @CacheEvict, TTL) with Employee Library artifact",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Get All Employees",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/employees",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "employees"]
+        }
+      }
+    },
+    {
+      "name": "2. Get Employee by ID (Cache Miss on first call -> cached in Redis)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/employees/102",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "employees", "102"]
+        }
+      }
+    },
+    {
+      "name": "3. Get Employee by ID (Cache Hit -> served directly from Redis)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/employees/102",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "employees", "102"]
+        }
+      }
+    },
+    {
+      "name": "4. Create New Employee",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": 105,\n  \"name\": \"Rachel Green\",\n  \"department\": \"HR\",\n  \"salary\": 95000.0,\n  \"active\": true\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/employees",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "employees"]
+        }
+      }
+    },
+    {
+      "name": "5. Update Employee (@CachePut -> updates DB and Redis cache)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Sam Wilson (Promoted)\",\n  \"department\": \"Engineering\",\n  \"salary\": 135000.0,\n  \"active\": true\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/employees/102",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "employees", "102"]
+        }
+      }
+    },
+    {
+      "name": "6. Delete Employee (@CacheEvict -> deletes from DB and clears Redis cache)",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/employees/105",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "employees", "105"]
+        }
+      }
+    },
+    {
+      "name": "7. Filter Employees by Department",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/employees/department/Engineering",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "employees", "department", "Engineering"]
+        }
+      }
+    },
+    {
+      "name": "8. Filter Active Employees with Salary > Threshold (Stream API)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/employees/active/salary-threshold?minSalary=100000",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "employees", "active", "salary-threshold"],
+          "query": [
+            {
+              "key": "minSalary",
+              "value": "100000"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "9. Inspect Active Redis Cache Keys",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/employees/cache/keys",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "employees", "cache", "keys"]
+        }
+      }
+    }
+  ]
+}
+
